@@ -330,7 +330,9 @@ public:
       VW::string_view sv = _line.substr(_read_idx);
       _cur_channel_v = parseFloat(sv.begin(), end_read, sv.end());
       if (end_read + _read_idx >= _line.size())
-      { parserWarning("malformed example! Float expected after : \"", _line.substr(0, _read_idx), "\""); }
+      {
+        parserWarning("malformed example! Float expected after : \"", _line.substr(0, _read_idx), "\"");
+      }
       if (std::isnan(_cur_channel_v))
       {
         _cur_channel_v = 1.f;
@@ -454,7 +456,10 @@ public:
 
 void substring_to_example(vw* all, example* ae, VW::string_view example)
 {
-  all->example_parser->lbl_parser.default_label(&ae->l);
+  std::string ignore_tag_value;
+  bool ignore_tag_passed = all->options->get_typed_option<std::string>("ignore_tag").value_supplied();
+  if (ignore_tag_passed) { ignore_tag_value = all->options->get_typed_option<std::string>("ignore_tag").value(); }
+  bool add_example = true;
 
   size_t bar_idx = example.find('|');
 
@@ -477,22 +482,32 @@ void substring_to_example(vw* all, example* ae, VW::string_view example)
             all->example_parser->words.back().front() == '\''))  // The last field is a tag, so record and strip it off
     {
       VW::string_view tag = all->example_parser->words.back();
-      all->example_parser->words.pop_back();
-      if (tag.front() == '\'') tag.remove_prefix(1);
-      push_many(ae->tag, tag.begin(), tag.size());
+      if (ignore_tag_passed && (tag == ignore_tag_value)) add_example = false;
+
+      if ((!ignore_tag_passed) || (ignore_tag_passed && (tag != ignore_tag_value)))
+      {
+        all->example_parser->words.pop_back();
+        if (tag.front() == '\'') tag.remove_prefix(1);
+        push_many(ae->tag, tag.begin(), tag.size());
+      }
     }
   }
-
-  if (!all->example_parser->words.empty())
-    all->example_parser->lbl_parser.parse_label(all->example_parser, all->example_parser->_shared_data, &ae->l,
-        all->example_parser->words, ae->_reduction_features);
-
-  if (bar_idx != VW::string_view::npos)
+  if (add_example)
   {
-    if (all->audit || all->hash_inv)
-      TC_parser<true> parser_line(example.substr(bar_idx), *all, ae);
-    else
-      TC_parser<false> parser_line(example.substr(bar_idx), *all, ae);
+    all->example_parser->lbl_parser.default_label(&ae->l);
+    if (!all->example_parser->words.empty())
+    {
+      all->example_parser->lbl_parser.parse_label(all->example_parser, all->example_parser->_shared_data, &ae->l,
+          all->example_parser->words, ae->_reduction_features);
+    }
+
+    if (bar_idx != VW::string_view::npos)
+    {
+      if (all->audit || all->hash_inv)
+        TC_parser<true> parser_line(example.substr(bar_idx), *all, ae);
+      else
+        TC_parser<false> parser_line(example.substr(bar_idx), *all, ae);
+    }
   }
 }
 

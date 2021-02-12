@@ -114,7 +114,9 @@ using namespace VW::config;
 bool ends_with(std::string const& fullString, std::string const& ending)
 {
   if (fullString.length() > ending.length())
-  { return (fullString.compare(fullString.length() - ending.length(), ending.length(), ending) == 0); }
+  {
+    return (fullString.compare(fullString.length() - ending.length(), ending.length(), ending) == 0);
+  }
   else
   {
     return false;
@@ -230,11 +232,9 @@ void parse_dictionary_argument(vw& all, const std::string& str)
   ssize_t size = 2048, pos, nread;
   char rc;
   char* buffer = calloc_or_throw<char>(size);
-  do
-  {
+  do {
     pos = 0;
-    do
-    {
+    do {
       nread = fd->read(&rc, 1);
       if ((rc != EOF) && (nread > 0)) buffer[pos++] = rc;
       if (pos >= size - 1)
@@ -263,7 +263,9 @@ void parse_dictionary_argument(vw& all, const std::string& str)
     if (*d != ' ' && *d != '\t') continue;                            // reached end of line
     std::string word(c, d - c);
     if (map->find(word) != map->end())  // don't overwrite old values!
-    { continue; }
+    {
+      continue;
+    }
     d--;
     *d = '|';  // set up for parser::read_line
     VW::read_line(all, ec, d);
@@ -1414,12 +1416,19 @@ vw& parse_args(
                  .help("Port of the server for setting up spanning tree"));
     all.options->add_and_parse(parallelization_args);
 
+    std::string ignore_tag;
+    option_group_definition new_args("New options");
+    new_args.add(make_option("ignore_tag", ignore_tag).help("Tags to ignore."));
+    all.options->add_and_parse(new_args);
+
     // total, unique_id and node must be specified together.
     if ((all.options->was_supplied("total") || all.options->was_supplied("node") ||
             all.options->was_supplied("unique_id")) &&
         !(all.options->was_supplied("total") && all.options->was_supplied("node") &&
             all.options->was_supplied("unique_id")))
-    { THROW("you must specificy unique_id, total, and node if you specify any"); }
+    {
+      THROW("you must specificy unique_id, total, and node if you specify any");
+    }
 
     if (all.options->was_supplied("span_server"))
     {
@@ -1493,7 +1502,9 @@ void merge_options_from_header_strings(
     // not seem like an unreasonable restriction. The logical check here is: is "string_key" of the form {'-', <digit>,
     // <etc.>}.
     if (opt.string_key.length() > 1 && opt.string_key[0] == '-' && opt.string_key[1] >= '0' && opt.string_key[1] <= '9')
-    { treat_as_value = true; }
+    {
+      treat_as_value = true;
+    }
 
     // File options should always use long form.
 
@@ -1726,7 +1737,7 @@ vw* initialize(std::unique_ptr<options_i, options_deleter_type> options, io_buf*
     {
       std::vector<std::string> all_initial_regressor_files(all.initial_regressors);
       if (all.options->was_supplied("input_feature_regularizer"))
-      { all_initial_regressor_files.push_back(all.per_feature_regularizer_input); }
+        all_initial_regressor_files.push_back(all.per_feature_regularizer_input);
       read_regressor_file(all, all_initial_regressor_files, localModel);
       model = &localModel;
     }
@@ -1755,7 +1766,7 @@ vw* initialize(std::unique_ptr<options_i, options_deleter_type> options, io_buf*
     {
       print_enabled_reductions(all);
       if (!all.logger.quiet && !all.bfgs && !all.searchstr && !all.options->was_supplied("audit_regressor"))
-      { all.sd->print_update_header(*all.trace_message); }
+        all.sd->print_update_header(*all.trace_message);
       all.l->init_driver();
     }
 
